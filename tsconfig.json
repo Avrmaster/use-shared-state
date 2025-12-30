@@ -1,0 +1,20 @@
+{
+	"compilerOptions": {
+		"target": "ESNext",
+		"module": "NodeNext",
+		"moduleResolution": "nodenext",
+
+		"strict": true,
+		"esModuleInterop": true,
+		"strictPropertyInitialization": false,
+
+		"noEmit": true,
+		"useDefineForClassFields": false,
+		"allowImportingTsExtensions": true,
+
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true,
+		"skipLibCheck": true
+	},
+	"include": ["src", "tests"]
+}
