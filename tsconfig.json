@@ -14,7 +14,17 @@
 
 		"experimentalDecorators": true,
 		"emitDecoratorMetadata": true,
-		"skipLibCheck": true
+		"skipLibCheck": true,
+
+		"jsx": "react-jsx",
+		"lib": ["ESNext", "DOM", "DOM.Iterable"],
+		"types": ["react"],
+
+		"paths": {
+			"#hooks/*": ["./src/hooks/*"],
+			"#store/*": ["./src/store/*"],
+			"#context/*": ["./src/context/*"]
+		}
 	},
 	"include": ["src", "tests"]
 }
