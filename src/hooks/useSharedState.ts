@@ -10,13 +10,13 @@ export function useSharedState<Key extends keyof SharedKeys & string>(key: Key) 
 
 	function useStateValueRaw(initialState: S | (() => S)): [S, Dispatch<SetStateAction<S>>]
 	function useStateValueRaw(): [S | undefined, Dispatch<SetStateAction<S | undefined>>]
-	function useStateValueRaw(initialState?: S) {
+	function useStateValueRaw(initialState?: S): [any, Dispatch<any>] {
 		const store = useContext(Context)
 		const [, rerender] = useState(0)
 		const dispatch = useSharedStateDispatch(key)
 
 		const valueRef = useRef<S>(
-			(store.get(key) ?? typeof initialState === 'function') ? initialState() : initialState,
+			store.get(key) ?? (typeof initialState === 'function' ? initialState() : initialState),
 		)
 
 		useEffect(() => {

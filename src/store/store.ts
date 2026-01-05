@@ -16,7 +16,6 @@ export class Store {
 
 	public subscribe = (key: string, listener: Dispatch<any>) => {
 		this._listeners[key] = [...new Set([...(this._listeners[key] || []), listener])]
-		this.invalidateFromPersist(key)
 	}
 	public unsubscribe = (key: string, listener: Dispatch<any>) => {
 		this._listeners[key] = this._listeners[key]?.filter((cl) => cl !== listener)
@@ -35,11 +34,11 @@ export class Store {
 		// save to storage only if it was not dispatched using storage
 		if (keyProps?.persist && mode !== 'restored' && newValue !== undefined) {
 			if (newValue === null) {
-				Store.getKeyStorage(keyProps.persist).removeItem(key)
+				Store.getStorage(keyProps.persist).removeItem(Store.getStorageKey(key))
 			} else {
 				try {
-					Store.getKeyStorage(keyProps.persist).setItem(
-						key,
+					Store.getStorage(keyProps.persist).setItem(
+						Store.getStorageKey(key),
 						(keyProps.customEncoding?.encode ?? JSON.stringify)(newValue),
 					)
 				} catch (error) {
@@ -59,7 +58,7 @@ export class Store {
 		if (this._state[key] === undefined) {
 			const keyProps = this.config.persist?.[key]
 			if (keyProps?.persist) {
-				const rawValue = Store.getKeyStorage(keyProps.persist).getItem(key)
+				const rawValue = Store.getStorage(keyProps.persist).getItem(Store.getStorageKey(key))
 
 				try {
 					const decodedValue =
@@ -73,7 +72,10 @@ export class Store {
 		}
 	}
 
-	private static getKeyStorage(persist: true | SharedStateStorage): SharedStateStorage {
+	private static getStorage(persist: true | SharedStateStorage): SharedStateStorage {
 		return typeof persist === 'boolean' ? localStorage : persist
+	}
+	private static getStorageKey(key: string) {
+		return `#use-shared-state#${key}`
 	}
 }

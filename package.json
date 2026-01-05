@@ -5,6 +5,7 @@
 	"description": "",
 	"keywords": [],
 	"private": false,
+	"license": "MIT",
 	"scripts": {
 		"test": "jest --config=jest.config.local.cjs",
 		"build": "tsc --noEmit && rimraf dist && rollup -c",

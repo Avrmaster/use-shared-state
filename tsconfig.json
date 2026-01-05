@@ -18,7 +18,7 @@
 
 		"jsx": "react-jsx",
 		"lib": ["ESNext", "DOM", "DOM.Iterable"],
-		"types": ["react"],
+		"types": ["react", "jest"],
 
 		"paths": {
 			"#hooks/*": ["./src/hooks/*"],
