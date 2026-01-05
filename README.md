@@ -26,15 +26,15 @@ Define a shared key once:
 
 ```ts
 declare module 'use-shared-state' {
-  export interface SharedKeys {
-    apiToken: string | null
-  }
+    export interface SharedKeys {
+        apiToken: string | null
+    }
 }
 ```
 
 Update shared state in one component:
 
-```ts
+```tsx
 import { useSharedState } from 'use-shared-state'
 
 function LoginScreen() {
@@ -50,7 +50,7 @@ function LoginScreen() {
 
 Consume the same state somewhere else:
 
-```ts
+```tsx
 function UserProfile() {
   const [apiToken] = useSharedState('apiToken')()
 
@@ -128,7 +128,7 @@ By default, shared state is global to the application.
 
 Wrap a subtree in `Provider` to create an isolated store:
 
-```ts
+```tsx
 import { Provider } from 'use-shared-state'
 
 function App() {
@@ -144,31 +144,71 @@ Nested providers create independent stores.
 
 ### Persistence
 
-Persistence is configured per key via `Provider` configuration.
+Persistence is configured per key via the `Provider`'s `storeConfig` prop.
 
-```ts
-import { Provider } from 'use-shared-state'
+The simplest form enables persistence for a key using `localStorage`:
 
-const storeConfig = {
-  persist: {
-    apiToken: { persist: true },          // localStorage
-    theme:    { persist: sessionStorage } // custom storage
-  },
-}
+```tsx
+<Provider
+  storeConfig={{
+    persist: {
+      apiToken: true,
+    },
+  }}
+>
+  <Root />
+</Provider>
+```
+
+You can also specify a custom storage, such as `sessionStorage`:
+
+```tsx
+<Provider
+  storeConfig={{
+    persist: {
+      apiToken: sessionStorage,
+    },
+  }}
+>
+  <Root />
+</Provider>
+```
+
+For advanced use cases, you can provide a full configuration object per key:
+
+```tsx
+<Provider
+  storeConfig={{
+    persist: {
+      apiToken: {
+        storage: sessionStorage,
+        customEncoding: {
+          encode: value => value.accessToken,
+          decode: stored => ({ accessToken: stored }),
+        },
+      },
+    },
+  }}
+>
+  <Root />
+</Provider>
 ```
 
 Rules:
-- `persist: true` uses `localStorage`
-- passing a storage-like object uses that storage
+- `true` uses `localStorage`
+- a `Storage`-like object uses that storage
+- `false` or missing keys disable persistence
 - values are JSON-encoded by default
-- custom `encode` / `decode` functions can be provided per key
+- `customEncoding` allows full control over serialization
+
+
 
 ### Dispatch-only hook
 
 Use `useSharedStateDispatch` if you only need to update state and want to avoid
 rerenders:
 
-```ts
+```tsx
 import { useSharedStateDispatch } from 'use-shared-state'
 
 function LogoutButton() {

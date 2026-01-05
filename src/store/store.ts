@@ -1,6 +1,7 @@
 import { Dispatch } from 'react'
 
-import { PersistConfig, SharedStateStorage } from './store.types.ts'
+import { KeyPersistOption, PersistConfig, SharedStateStorage } from './store.types.ts'
+import { isKeyPersistOptionStorage } from './store.utils.ts'
 
 export interface StoreConfig {
 	persist?: PersistConfig
@@ -32,14 +33,14 @@ export class Store {
 
 		const keyProps = this.config.persist?.[key]
 		// save to storage only if it was not dispatched using storage
-		if (keyProps?.persist && mode !== 'restored' && newValue !== undefined) {
+		if (keyProps && mode !== 'restored' && newValue !== undefined) {
 			if (newValue === null) {
-				Store.getStorage(keyProps.persist).removeItem(Store.getStorageKey(key))
+				Store.getStorage(keyProps).removeItem(Store.getStorageKey(key))
 			} else {
 				try {
-					Store.getStorage(keyProps.persist).setItem(
+					Store.getStorage(keyProps).setItem(
 						Store.getStorageKey(key),
-						(keyProps.customEncoding?.encode ?? JSON.stringify)(newValue),
+						Store.getValueEncoder(keyProps)(newValue),
 					)
 				} catch (error) {
 					console.error(`Couldn't encode storage value [key: ${key}, value: ${newValue}]`, error)
@@ -57,13 +58,17 @@ export class Store {
 		// if a key wasn't initialised in memory, trigger loading from the persist storage
 		if (this._state[key] === undefined) {
 			const keyProps = this.config.persist?.[key]
-			if (keyProps?.persist) {
-				const rawValue = Store.getStorage(keyProps.persist).getItem(Store.getStorageKey(key))
+			if (keyProps) {
+				const rawValue = Store.getStorage(keyProps).getItem(Store.getStorageKey(key))
 
 				try {
 					const decodedValue =
-						rawValue !== null ? (keyProps.customEncoding?.decode ?? JSON.parse)(rawValue) : null
-					this.dispatch(key, decodedValue, 'restored')
+						rawValue !== null && rawValue !== undefined
+							? Store.getValueDecoder(keyProps)(rawValue)
+							: null
+					if (decodedValue !== null) {
+						this.dispatch(key, decodedValue, 'restored')
+					}
 				} catch (error) {
 					console.error(`Couldn't decode storage value [key: ${key}, value: ${rawValue}]`, error)
 					throw error
@@ -72,8 +77,23 @@ export class Store {
 		}
 	}
 
-	private static getStorage(persist: true | SharedStateStorage): SharedStateStorage {
-		return typeof persist === 'boolean' ? localStorage : persist
+	private static getStorage(keyPersistOption: KeyPersistOption<any>): SharedStateStorage {
+		if (isKeyPersistOptionStorage(keyPersistOption)) {
+			return typeof keyPersistOption === 'boolean' ? localStorage : keyPersistOption
+		}
+		return Store.getStorage(keyPersistOption.storage)
+	}
+	private static getValueEncoder(keyPersistOption: KeyPersistOption<any>) {
+		if (!isKeyPersistOptionStorage(keyPersistOption)) {
+			return keyPersistOption.customEncoding?.encode ?? JSON.stringify
+		}
+		return JSON.stringify
+	}
+	private static getValueDecoder(keyPersistOption: KeyPersistOption<any>) {
+		if (!isKeyPersistOptionStorage(keyPersistOption)) {
+			return keyPersistOption.customEncoding?.encode ?? JSON.parse
+		}
+		return JSON.parse
 	}
 	private static getStorageKey(key: string) {
 		return `#use-shared-state#${key}`
