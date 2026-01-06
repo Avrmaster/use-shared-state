@@ -11,9 +11,13 @@ Fully-typed shared state for React with `useState` semantics.
 
 ## What is this?
 
-`use-shared-state` is a small React-only hook library that lets you share state
+`use-shared-state` is a small, React-only hook library that lets you share state
 between unrelated components with the same API and mental model as React’s
 `useState`.
+
+It supports both **in-memory shared state** and **optional, per-key persistence**
+to browser storages such as `localStorage` and `sessionStorage`, with support for
+custom storage backends and custom serialization.
 
 State is shared by **globally typed keys**, ensuring that:
 - every key has exactly one type across the entire app
@@ -26,9 +30,9 @@ Define a shared key once:
 
 ```ts
 declare module 'use-shared-state' {
-    export interface SharedKeys {
-        apiToken: string | null
-    }
+  export interface SharedKeys {
+    apiToken: string | null
+  }
 }
 ```
 
@@ -66,7 +70,7 @@ function UserProfile() {
 - [Installation](#installation)
 - [Usage](#usage)
     - [Initialization and synchronization rules](#initialization-and-synchronization-rules)
-    - [Provider scopes](#provider-scopes)
+    - [Provider](#provider)
     - [Persistence](#persistence)
     - [Dispatch-only hook](#dispatch-only-hook)
 - [TypeScript experience](#typescript-experience)
@@ -82,7 +86,7 @@ function UserProfile() {
 - Fully typed shared keys via TypeScript module augmentation
 - Automatic synchronization across components using the same key
 - Optional scoping via `Provider`
-- Optional persistence per key (localStorage / sessionStorage / custom storage)
+- **Optional per-key persistence** to `localStorage`, `sessionStorage`, or custom storage backends
 - Dispatch-only hook to avoid rerenders when you only need to update state
 
 ## Installation
@@ -122,11 +126,14 @@ If the first usage results in `undefined`, a later usage may still provide a
 default and initialize the key. Once initialized, the value is shared and kept
 in sync for all consumers.
 
-### Provider scopes
+### Provider
 
-By default, shared state is global to the application.
+By default, **you do not need a Provider at all**.
 
-Wrap a subtree in `Provider` to create an isolated store:
+If you don’t render `Provider`, `use-shared-state` uses a single global store for
+the entire application.
+
+Use `Provider` only when you want to **isolate shared state** for a subtree.
 
 ```tsx
 import { Provider } from 'use-shared-state'
@@ -142,50 +149,22 @@ function App() {
 
 Nested providers create independent stores.
 
+
 ### Persistence
 
 Persistence is configured per key via the `Provider`'s `storeConfig` prop.
 
-The simplest form enables persistence for a key using `localStorage`:
+If you don’t need persistence, you don’t need to configure anything.
 
 ```tsx
 <Provider
   storeConfig={{
     persist: {
-      apiToken: true,
-    },
-  }}
->
-  <Root />
-</Provider>
-```
-
-You can also specify a custom storage, such as `sessionStorage`:
-
-```tsx
-<Provider
-  storeConfig={{
-    persist: {
-      apiToken: sessionStorage,
-    },
-  }}
->
-  <Root />
-</Provider>
-```
-
-For advanced use cases, you can provide a full configuration object per key:
-
-```tsx
-<Provider
-  storeConfig={{
-    persist: {
-      apiToken: {
-        storage: sessionStorage,
-        customEncoding: {
-          encode: value => value.accessToken,
-          decode: stored => ({ accessToken: stored }),
-        },
+      apiToken: true,               // localStorage
+      language: sessionStorage,     // custom storage
+      complex: {
+        storage: true,
+        customEncoding: { encode, decode },
       },
     },
   }}
@@ -195,11 +174,12 @@ For advanced use cases, you can provide a full configuration object per key:
 ```
 
 Rules:
-- `true` uses `localStorage`
-- a `Storage`-like object uses that storage
-- `false` or missing keys disable persistence
+- `true` → `localStorage`
+- storage-like object → that storage
+- `false` or missing key → persistence disabled
 - values are JSON-encoded by default
-- `customEncoding` allows full control over serialization
+- `customEncoding` allows custom serialization
+- setting a value to `null` removes the persisted entry
 
 
 
@@ -227,11 +207,6 @@ This library is designed to be TypeScript-first.
 - Autocomplete works for keys and values
 - Using an unknown key or wrong type is a compile-time error
 
-Example error cases:
-- using a key that is not declared
-- setting a value of the wrong type
-- attempting to use generics to override a key’s type
-
 This design intentionally prevents subtle runtime bugs caused by inconsistent
 shared state shapes.
 
@@ -239,27 +214,39 @@ shared state shapes.
 
 `setState` behaves exactly like React’s `useState` setter:
 - accepts a value or an updater function
-- no automatic merging (merge manually if needed)
+- no automatic merging
 - updates always notify all subscribers, even if the value is unchanged
 
 ## Limitations
 
-- React-only (not framework-agnostic)
+- React-only
 - Uses browser storage APIs for persistence
 - Not SSR-safe by default (client-only usage recommended)
 
 ## Motivation and comparison
 
-`use-shared-state` is for cases where you want shared state without introducing
-reducers, actions, selectors, or a large state-management abstraction.
+`use-shared-state` is designed for **shared client-side state** with the same ergonomics as `useState`, plus optional persistence.
 
-Compared to React Context:
-- no provider wiring per piece of state
-- no memoization boilerplate
+### At a glance
 
-Compared to larger state managers:
-- intentionally minimal API
-- strong guarantees around shared key types
+| Tool | What it’s best for | Key trade-off |
+|---|---|---|
+| `useState` | Local component state | Not shareable |
+| `useContext` | Global values / dependencies | Centralized ownership |
+| `useReducer` | Complex state transitions | Boilerplate (actions/reducers) |
+| `use-between` | Sharing state via custom hooks | Requires a dedicated hook per entity |
+| Zustand / Jotai | Full app state management | Extra abstraction |
+| **use-shared-state** | **Shared state, writable from anywhere** | **Key-based, not hook-based** |
+
+### One-sentence summary
+
+- `useContext` → global values, usually owned by a provider
+- `useReducer` → shared state via actions and reducers
+- `use-between` → share state by **creating and reusing a hook per entity**
+- Zustand / Jotai → external stores for broader state management
+- **use-shared-state** → `useState`, but shared by **typed keys**, writable from anywhere, optionally persistent
+
+
 
 ## FAQ
 
