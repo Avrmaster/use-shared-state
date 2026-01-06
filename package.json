@@ -1,6 +1,6 @@
 {
-	"name": "use-shared-state",
-	"version": "1.0.0",
+	"name": "@oleksandr_leskiv/use-shared-state",
+	"version": "1.0.1",
 	"author": "Oleksandr Leskiv",
 	"description": "",
 	"keywords": [],
@@ -10,7 +10,7 @@
 		"test": "jest --config=jest.config.local.cjs",
 		"build": "tsc --noEmit && rimraf dist && rollup -c",
 		"prepare": "yarn build",
-		"preversion": "yarn build && yarn test",
+		"preversion": "yarn build",
 		"postversion": "yarn publish --new-version $npm_package_version",
 		"postpublish": "git push"
 	},
